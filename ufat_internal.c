@@ -1,3 +1,4 @@
+/* uFAT -- small flexible VFAT implementation
 Copyright (C) 2012 TracMap Holdings Ltd
 
 Redistribution and use in source and binary forms, with or without
@@ -26,3 +27,44 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+#include "ufat_internal.h"
+
+#include <string.h>
+
+int strcasecmp( const char* origstr, const char* cmpstr ) {
+
+    unsigned int len_origstr = sizeof(origstr) / sizeof(origstr[0]);
+    unsigned int len_cmpstr = sizeof(origstr) / sizeof(origstr[0]);
+
+    unsigned int i = 0;
+    for ( ; i < len_cmpstr && i < len_origstr; i++ ) {
+
+        if ( cmpstr[i] != origstr[i] ) return 1;
+
+    }
+
+    if ( i < len_cmpstr || i < len_origstr ) return -1;
+
+    return 0;
+
+}
+
+int strncasecmp( const char* origstr, const char* cmpstr, unsigned long long _len ) {
+
+    unsigned int len_origstr = sizeof(origstr) / sizeof(origstr[0]);
+    unsigned int len_cmpstr = sizeof(origstr) / sizeof(origstr[0]);
+
+    unsigned int i = 0;
+    for ( ; i < len_cmpstr && i < len_origstr && i <= _len; i++ ) {
+
+        if ( cmpstr[i] != origstr[i] ) return 1;
+
+    }
+
+    if ( i < len_cmpstr || i < len_origstr ) return -1;
+
+    return 0;
+
+}
