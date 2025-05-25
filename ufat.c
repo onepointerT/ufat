@@ -29,9 +29,130 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <stdlib.h>
 #include <string.h>
+
 #include "ufat.h"
 #include "ufat_internal.h"
+
+
+int ufat_bufmalloc( uint8_t* bufptr, const unsigned long long bufsize ) {
+
+	uint8_t buf[bufsize];
+	bufptr = malloc(sizeof(uint8_t)*bufsize);
+	bufptr = &buf;
+
+}
+
+int ufat_bufallocate( struct ufat_buffer_t* buf, const unsigned long long bufsize, void* _olddata ) {
+
+	if ( _olddata != 0 ) ufat_bufread( buf, _olddata );
+
+	ufat_bufmalloc( buf->buf, bufsize );
+	buf->bufsize = bufsize;
+
+}
+
+int ufat_bufwrite( const void* bufsrc, struct ufat_buffer_t* bufdest, void* _olddata ) {
+
+	uint8_t* buf = (uint8_t*) bufsrc;
+	const unsigned long long bufsize = sizeof(buf) / sizeof(buf[0]);
+
+	ufat_bufallocate( bufdest, bufsize, _olddata );
+	strcpy( bufdest->buf, buf );
+
+}
+
+int ufat_bufread( const struct ufat_buffer_t* bufsrc, void* bufdest ) {
+
+	uint8_t buf[bufsrc->bufsize];
+	uint8_t* bufptr = malloc(sizeof(uint8_t)*bufsrc->bufsize);
+	bufptr = &buf;
+
+	strcpy( bufptr, bufsrc->buf );
+
+	bufdest = bufptr;
+
+}
+
+
+int	ufat_filedevice_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer) {
+
+	struct ufat_file_device* ufd = (struct ufat_file_device *)dev;
+
+	if (fseek(ufd->fd, start << ufd->dev->log2_block_size, SEEK_SET) < 0) {
+		perror("file_device_read: fseek");
+		return -1;
+	}
+
+	if (fread(buffer, 1 << ufd->dev->log2_block_size,
+		  count, ufd->fd) != count) {
+		if (feof(ufd->fd)) {
+			memset(buffer, 0xcc,
+			       (1 << ufd->dev->log2_block_size) * count);
+		} else {
+			perror("file_device_read: fread");
+			return -1;
+		}
+	}
+
+	return 0;
+	
+}
+
+
+int	ufat_filedevice_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer) {
+
+	struct ufat_file_device *ufd = (struct ufat_file_device *)dev;
+
+	if (ufd->read_only) {
+		fprintf(stderr, "file_device_write: read-only device\n");
+		return -1;
+	}
+
+	if (fseek(ufd->fd, start << ufd->dev->log2_block_size, SEEK_SET) < 0) {
+		perror("file_device_write: fseek");
+		return -1;
+	}
+
+	if (fwrite(buffer, 1 << ufd->dev->log2_block_size,
+		   count, ufd->fd) != count) {
+		perror("file_device_write: fwrite");
+		return -1;
+	}
+
+	return 0;
+
+}
+
+
+int	ufat_bufferdevice_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer) {
+
+	struct ufat_buffer_device *ubd = (struct ufat_buffer_device *)dev;
+	
+	ufat_bufread( ubd, buffer );
+
+	return 0;
+}
+
+int	ufat_bufferdevice_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer) {
+
+
+	struct ufat_buffer_device *ubd = (struct ufat_buffer_device *)dev;
+	
+	ufat_bufwrite( buffer, ubd, 0 );
+
+	return 0;
+}
+
 
 static int cache_flush(struct ufat *uf, unsigned int cache_index)
 {

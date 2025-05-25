@@ -171,4 +171,5 @@ int ufat_format_short(const char *name, const char *ext,
 int strcasecmp( const char* origstr, const char* cmpstr );
 int strncasecmp( const char* origstr, const char* cmpstr, unsigned long long _len );
 
+
 #endif

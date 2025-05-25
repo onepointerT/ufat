@@ -1,32 +1,61 @@
 /* uFAT -- small flexible VFAT implementation
- * Copyright (C) 2012 TracMap Holdings Ltd
- *
- * Author: Daniel Beer <dlbeer@gmail.com>, www.dlbeer.co.nz
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
+Copyright (C) 2012 TracMap Holdings Ltd
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+1. Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
 
 #ifndef UFAT_H_
 #define UFAT_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 /* Block counts and indices are held in this type. */
 typedef unsigned long long ufat_block_t;
 
 #define UFAT_BLOCK_NONE ((ufat_block_t)0xffffffffffffffffLL)
+
+
+struct ufat_buffer_t {
+	uint8_t* buf;
+	unsigned long long bufsize;
+
+	int (*bufmalloc)( uint8_t* bufptr, const unsigned long long bufsize );
+	int (*bufallocate)( struct ufat_buffer_t* buf, const unsigned long long bufsize, void* _olddata );
+	int (*write)( const void* bufsrc, struct ufat_buffer_t* bufdest, void* _olddata  );
+	int (*read)( const struct ufat_buffer_t* bufsrc, void* bufdest );
+};
+
+int ufat_bufmalloc( uint8_t* bufptr, const unsigned long long bufsize );
+int ufat_bufallocate( struct ufat_buffer_t* buf, const unsigned long long bufsize, void* _olddata );
+int ufat_bufwrite( const void* bufsrc, struct ufat_buffer_t* bufdest, void* _olddata );
+int ufat_bufread( const struct ufat_buffer_t* bufsrc, void* bufdest );
+
 
 /* This structure is the interface to a block device. Read and write methods
  * must be provided, which return 0 on success or -1 if an error occurs.
@@ -43,6 +72,46 @@ struct ufat_device {
 				 ufat_block_t start, ufat_block_t count,
 				 const unsigned char *buffer);
 };
+
+
+
+int	ufat_device_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer);
+int	ufat_device_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer);
+
+
+struct ufat_file_device {
+	struct ufat_device* dev;
+	FILE* fd;
+	unsigned int read_only;
+};
+
+
+int	ufat_filedevice_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer);
+int	ufat_filedevice_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer);
+
+
+struct ufat_buffer_device {
+	struct ufat_device* dev;
+	struct ufat_buffer_t* buf;
+	unsigned int read_only;
+};
+
+
+int	ufat_bufferdevice_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer);
+int	ufat_bufferdevice_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer);
+
 
 /* Cache parameters. The more cache is used, the fewer filesystem reads/writes
  * have to be performed. The cache must be able to hold at least one block.
