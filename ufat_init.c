@@ -91,3 +91,128 @@ struct ufat_buffer_device* ufat_init_buffer_device( const unsigned long long buf
 
 }
 
+
+
+
+
+struct ufat_cache_desc* ufat_init_cache_desc( const ufat_block_t index, const int flags ) {
+
+    struct ufat_cache_desc* ufat_cd = malloc(sizeof(struct ufat_cache_desc));
+    ufat_cd->flags = flags;
+    ufat_cd->index = index;
+    ufat_cd->seq = 0;
+
+    return ufat_cd;
+
+}
+
+struct ufat_stat* ufat_init_stat( const bool read, const bool write ) {
+
+    struct ufat_stat* ufat_st = malloc(sizeof(struct ufat_stat));
+    ufat_st->read = read;
+    ufat_st->write = write;
+    ufat_st->read_blocks = 0;
+    ufat_st->write_blocks = 0;
+    ufat_st->cache_hit = 0;
+    ufat_st->cache_miss = 0;
+    ufat_st->cache_write = 0;
+    ufat_st->cache_flush = 0;
+
+    return ufat_st;
+
+}
+
+struct ufat_bpb* ufat_init_bpb( const ufat_fat_type_t fat_type, const unsigned int log2_blocks_per_cluster
+                            , const ufat_cluster_t num_clusters, const ufat_block_t fat_size ) {
+
+    struct ufat_bpb* ufat_b = malloc(sizeof(struct ufat_bpb));
+    ufat_b->type = fat_type;
+    ufat_b->log2_blocks_per_cluster = log2_blocks_per_cluster;
+    ufat_b->fat_start = 0;
+    ufat_b->fat_size = fat_size;
+    ufat_b->fat_count = 1;
+    ufat_b->cluster_start = 0;
+    ufat_b->num_clusters = num_clusters;
+    ufat_b->root_start = 0;
+    ufat_b->root_size = fat_size;
+    ufat_b->root_cluster = 1;
+
+    return ufat_b;
+}
+
+
+struct ufat* ufat_init_ufat( const bool read, const bool write, const ufat_fat_type_t fat_type
+                        , const unsigned int log2_blocks_per_cluster, const ufat_cluster_t num_clusters
+                        , const ufat_block_t fat_size ) {
+
+    struct ufat* uf = malloc(sizeof(struct ufat));
+    uf->dev = ufat_init_device( log2_blocks_per_cluster );
+    uf->stat = *(ufat_init_stat( read, write ));
+    uf->bpb = *(ufat_init_bpb( fat_type, log2_blocks_per_cluster, num_clusters, fat_size ));
+    uf->next_seq = 0;
+    uf->cache_size = UFAT_CACHE_BYTES;
+    uf->alloc_ptr = 0;
+    
+    return uf;
+
+}
+
+
+struct ufat_dirent* ufat_init_direntry( const ufat_block_t dirent_block, const unsigned int dirent_pos
+                                , const char* dirent_short_name, const char* dirent_short_ext
+                                , const ufat_attr_t dirent_attributes, const ufat_cluster_t first_cluster
+                                , const ufat_size_t file_size, const ufat_date_t create_date
+                                , const ufat_time_t create_time ) {
+
+    struct ufat_dirent* ufat_de = malloc(sizeof(struct ufat_dirent));
+    ufat_de->dirent_block = dirent_block;
+    ufat_de->dirent_pos = dirent_pos;
+    ufat_de->lfn_block = dirent_block;
+    ufat_de->lfn_pos = dirent_pos;
+    strncpy( ufat_de->short_name, dirent_short_name, 9 );
+    strncpy( ufat_de->short_ext, dirent_short_ext, 4 );
+    ufat_de->attributes = dirent_attributes;
+    ufat_de->create_date = create_date;
+    ufat_de->create_time = create_time;
+    ufat_de->modify_date = 0;
+    ufat_de->modify_time = 0;
+    ufat_de->access_date = 0;
+    ufat_de->first_cluster = first_cluster;
+    ufat_de->file_size = file_size;
+
+    return ufat_de;
+}
+
+
+struct ufat_directory* ufat_init_directory( const ufat_block_t current_block, const ufat_block_t current_pos
+                                    , struct ufat* uf ) {
+
+    struct ufat_directory* ufat_dir = malloc(sizeof(struct ufat_directory));
+    ufat_dir->uf = uf;
+    ufat_dir->cur_pos = current_pos;
+    ufat_dir->cur_block = current_block;
+    ufat_dir->start = current_block;
+
+    return ufat_dir;
+
+}
+
+
+struct ufat_file* ufat_init_file( struct ufat_dirent* direntry, const ufat_cluster_t prev_cluster
+                            , struct ufat* uf ) {
+
+    struct ufat_file* ufat_fl = malloc(sizeof(struct ufat_file));
+    ufat_fl->uf = uf;
+    ufat_fl->dirent_block = direntry->dirent_block;
+    ufat_fl->dirent_pos = direntry->dirent_pos;
+    ufat_fl->start = direntry->first_cluster;
+    ufat_fl->file_size = direntry->file_size;
+    ufat_fl->prev_cluster = prev_cluster;
+    ufat_fl->cur_cluster = direntry->first_cluster;
+    ufat_fl->cur_pos = direntry->dirent_pos;
+
+    return ufat_fl;
+
+}
+
+

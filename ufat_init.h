@@ -42,3 +42,24 @@ struct ufat_file_device* ufat_init_file_device( const char* filepath, const unsi
 struct ufat_buffer_device* ufat_init_buffer_device( const unsigned long long bufsize
                                         , const unsigned int read_only, const unsigned int log2_block_size );
 
+
+struct ufat_cache_desc* ufat_init_cache_desc( const ufat_block_t index, const int flags );
+struct ufat_stat* ufat_init_stat( const bool read, const bool write );
+struct ufat_bpb* ufat_init_bpb( const ufat_fat_type_t fat_type, const unsigned int log2_blocks_per_cluster
+                            , const ufat_cluster_t num_clusters, const ufat_block_t fat_size );
+
+struct ufat* ufat_init_ufat( const bool read, const bool write, const ufat_fat_type_t fat_type
+                        , const unsigned int log2_blocks_per_cluster, const ufat_cluster_t num_clusters
+                        , const ufat_block_t fat_size );
+
+struct ufat_dirent* ufat_init_direntry( const ufat_block_t dirent_block, const unsigned int dirent_pos
+                                , const char* dirent_short_name, const char* dirent_short_ext
+                                , const ufat_attr_t dirent_attributes, const ufat_cluster_t first_cluster
+                                , const ufat_size_t file_size, const ufat_date_t create_date
+                                , const ufat_time_t create_time );
+
+struct ufat_directory* ufat_init_directory( const ufat_block_t current_block, const ufat_block_t current_pos
+                                    , struct ufat* uf );
+
+struct ufat_file* ufat_init_file( struct ufat_dirent* direntry, const ufat_cluster_t prev_cluster
+                            , struct ufat* uf );
