@@ -29,8 +29,10 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "ufat.h"
 #include "ufat_internal.h"
@@ -73,6 +75,47 @@ int ufat_bufread( const struct ufat_buffer_t* bufsrc, void* bufdest ) {
 
 	bufdest = bufptr;
 
+}
+
+
+int	ufat_device_read(const struct ufat_device *dev,
+			ufat_block_t start, ufat_block_t count,
+			unsigned char *buffer) {
+	
+	ufat_block_t db = start;
+	ufat_block_t dmax = count - start;
+	ufat_block_t bidx = 0;
+
+	if ( db > sizeof(dev->devbuf) * sizeof(char)
+	  || dmax+db > sizeof(dev->devbuf) * sizeof(char) )
+		return -1;
+
+	buffer = malloc( sizeof(unsigned char) * count );
+
+	for ( ; db < dmax; db++, bidx++ ) {
+		buffer[bidx] = (unsigned char) dev->devbuf[db];
+	}
+
+	return 0;
+}
+
+int	ufat_device_write(const struct ufat_device *dev,
+				ufat_block_t start, ufat_block_t count,
+				const unsigned char *buffer) {
+	
+	ufat_block_t db = start;
+	ufat_block_t dmax = count - start;
+	ufat_block_t bidx = 0;
+
+	if ( db > sizeof(dev->devbuf) * sizeof(char)
+	  || dmax+db > sizeof(dev->devbuf) * sizeof(char) )
+		return -1;
+
+	for ( ; db < dmax; db++, bidx++ ) {
+		dev->devbuf[db] = buffer[bidx];
+	}
+
+	return 0;
 }
 
 
@@ -434,6 +477,38 @@ int ufat_sync(struct ufat *uf)
 void ufat_close(struct ufat *uf)
 {
 	ufat_sync(uf);
+}
+
+
+ufat_time_t ufat_timenow() {
+	time_t current_time;
+	time(&current_time);
+
+	struct tm* local_time = localtime( &current_time );
+
+	ufat_time_t ufat_time;
+	sprintf( &ufat_time, "%u%u%u",
+			  local_time->tm_hour, local_time->tm_min
+			, local_time->tm_sec
+	);
+
+	return ufat_time;
+}
+
+ufat_date_t ufat_datenow() {
+	time_t current_time;
+	time(&current_time);
+
+	struct tm* local_time = localtime( &current_time );
+
+	ufat_date_t ufat_date;
+
+	sprintf( &ufat_date, "%u%u%u",
+		      local_time->tm_year + 1900, local_time->tm_mon + 1
+			, local_time->tm_mday 
+	);
+
+	return ufat_date;
 }
 
 const char *ufat_strerror(int err)

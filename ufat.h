@@ -65,6 +65,7 @@ int ufat_bufread( const struct ufat_buffer_t* bufsrc, void* bufdest );
  */
 struct ufat_device {
 	unsigned int	log2_block_size;
+	unsigned char*   devbuf;
 	int		(*read)(const struct ufat_device *dev,
 				ufat_block_t start, ufat_block_t count,
 				unsigned char *buffer);
@@ -234,12 +235,16 @@ typedef enum {
 
 typedef uint16_t ufat_time_t;
 
+ufat_time_t ufat_timenow();
+
 #define UFAT_TIME(h, m, s) (((h) << 11) | ((m) << 5) | ((s) >> 1))
 #define UFAT_TIME_H(t) (((t) >> 11) & 0x1f)
 #define UFAT_TIME_M(t) (((t) >> 5) & 0x3f)
 #define UFAT_TIME_S(t) (((t) & 0x1f) << 1)
 
 typedef uint16_t ufat_date_t;
+
+ufat_date_t ufat_datenow();
 
 #define UFAT_DATE(y, m, d) ((((y) - 1980) << 9) | ((m) << 5) | (d))
 #define UFAT_DATE_Y(d) (((d) >> 9) + 1980)
