@@ -65,6 +65,7 @@ public:
     bool file_open();
     bool file_advance( ufat_size_t nbytes );
     char* file_read( ufat_size_t max_size );
+    unsigned char* file_read_unsigned( ufat_size_t max_size );
     bool file_write( const char* buf, ufat_size_t buflen );
     bool file_truncate();
 };

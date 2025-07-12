@@ -81,6 +81,13 @@ char* File::file_read( ufat_size_t max_size ) {
     return buf;
 }
 
+
+unsigned char* File::file_read_unsigned( ufat_size_t max_size ) {
+    char* file_content = this->file_read( max_size );
+    return reinterpret_cast<unsigned char*>( file_content );
+}
+
+
 bool File::file_write( const char* buf, ufat_size_t buflen ) {
     return ufat_file_write( this, buf, buflen ) == 0;
 }
